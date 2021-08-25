@@ -1,0 +1,108 @@
+# makefile for intg - Win32 platform
+# makefile.w32 - 1.1 - 2010/02/22
+#
+#  to compile and link:    make   (is same as):  make -f makefile.w32
+#  to publish:                                   make copy
+#  to remove all except the executable (clean):  make clean
+#---------------------------------------------------------------------
+# using MinGW-5.1.3 port of GNU gcc (g++) compiler
+# home     - http://www.mingw.org/
+# download - http://sourceforge.net/project/showfiles.php?group_id=2435
+#
+# g++ compiler options:
+#  -c     compile only
+#  -g     add debugging info
+#  -pg    add profiling info
+#  -ox    object filename = "x"
+#  -Wall  turn on all warning messages
+#---------------------------------------------------------------------
+CCROOT  =  C:\\MinGW
+CCC     =  $(CCROOT)\\bin\\g++.exe
+
+# Production
+CFLAGS   =  
+CCFLAGS  =  -DNGS_PC_ENV
+# Development and Testing
+# CFLAGS   = -g 
+# CCFLAGS  = -g -Wall
+
+.c.o   :
+	$(CCC) $(CCFLAGS) $(INCLUDES) -c $<
+.C.o   :
+	$(CCC) $(CCFLAGS) $(INCLUDES) -c $<
+#-------------------------------------
+PGM      = intg
+
+INCLUDES = \
+  -I.
+
+LIBS     = \
+
+OBJECTS  = \
+  bb80ll.o       \
+  expform.o      \
+  ff1.o          \
+  ff1out.o       \
+  ff2.o          \
+  ff2out.o       \
+  ff4out.o       \
+  intro.o        \
+  run_bbk.o      \
+  bilin.o          \
+  c2v.o            \
+  dd_dms.o         \
+  dms_dd.o         \
+  flip_endian_d.o  \
+  flip_endian_f.o  \
+  flip_endian_l.o  \
+  getdir_geoid.o \
+  getgrd_geoid.o   \
+  getheaders.o     \
+  initsp.o         \
+  interg.o         \
+  spline.o         \
+  spline4.o        \
+  spline6.o        \
+  which1.o         \
+  trim_c.o         \
+  intg.o           \
+
+
+#-------------------------------------
+$(PGM)  :  $(OBJECTS)
+	$(CCC) $(CCFLAGS)  -o $@  $(OBJECTS) $(LIBS)
+
+intg.o             : intg.c
+bb80ll.o           : bb80ll.c          bb80ll.h
+expform.o          : expform.c         expform.h
+ff1.o              : ff1.c             ff1.h
+ff1out.o           : ff1out.c          ff1out.h       dataset1.h
+ff2.o              : ff2.c             ff2.h
+ff2out.o           : ff2out.c          ff2out.h       dataset1.h
+ff4out.o           : ff4out.c          ff4out.h       dataset1.h
+intro.o            : intro.c           intro.h
+run_bbk.o          : run_bbk.c         run_bbk.h      grid_header.h
+
+bilin.o            : bilin.c           bilin.h        grid_header.h
+c2v.o              : c2v.c             c2v.h
+dd_dms.o           : dd_dms.C          dd_dms.h
+dms_dd.o           : dms_dd.c          dms_dd.h
+flip_endian_d.o    : flip_endian_d.c   flip_endian_d.h
+flip_endian_f.o    : flip_endian_f.c   flip_endian_f.h
+flip_endian_l.o    : flip_endian_l.c   flip_endian_l.h
+getdir_geoid.o   : getdir_geoid.c  getdir_geoid.h
+getgrd_geoid.o     : getgrd_geoid.c    getgrd_geoid.h
+getheaders.o       : getheaders.c      getheaders.h   grid_header.h
+initsp.o           : initsp.c          initsp.h
+interg.o           : interg.c          interg.h       grid_header.h
+spline.o           : spline.c          spline.h
+spline4.o          : spline4.c         spline4.h      grid_header.h
+spline6.o          : spline6.c         spline6.h      grid_header.h
+trim_c.o           : trim_c.c          trim_c.h
+which1.o           : which1.c          which1.h       grid_header.h
+
+
+clean:
+	erase core
+	erase *.obj
+

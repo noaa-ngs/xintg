@@ -1,0 +1,356 @@
+<project name="intg" default="deploy" >
+    <property file="/ngs/projects/database/conf/ngsidb_ant_build.properties"/>
+    <property name="exe_name" value="intg"/>
+    <property name="exe_name.w" value="${exe_name}.w"/>
+    <property name="destbindir" location="${BLUEBOOKDIR}/bin" />
+    <property name="WRAPPER" value="${BLUEBOOKDIR}/scripts/${WRAPPER_SCRIPT}" />
+    <property name="build" location="build"/>
+    <property name="obj" location="${build}/obj"/>
+    <property name="executable" location="${destbindir}/${exe_name.w}"/>
+    <property name="pwd" location=""/>
+    <property name="version" value="${version_in}"/>
+    <taskdef resource="cpptasks.tasks"/>
+    <property name="dev_dir" value="/ngs/projects/web/testweb/devlinuxlocal/cgi/cgi-bin"/>
+    <property name="test_dir" value="/ngs/projects/web/testweb/testlinuxlocal/cgi/cgi-bin"/>
+    <property name="prod_dir" value="/ngs/projects/web/newweb/linuxlocal/cgi/cgi-bin"/>
+    <property name="beta_dir" value="/ngs/projects/web/betaweb/betalinuxlocal/cgi/cgi-bin/"/>
+    <!-- set the operating system test properties -->
+    <condition property="isWindows">
+      <os family="windows" />
+    </condition>
+
+    <condition property="isUnix">
+      <os family="unix" />
+    </condition>
+
+    <!-- create directories for build and obj-->
+    <target name="init" if="isUnix">
+      <mkdir dir="${build}"/>
+      <mkdir dir="${obj}"/>
+      <mkdir dir="${destbindir}/backup" />
+    </target>
+    <!-- compile C-modules-->
+    <target name="c_compile" depends="f_compile" if="isUnix">
+        <cc name="cc" subsystem="console" objdir="${obj}" warnings="none">
+           <compilerarg value="-g" if="debug" />
+           <compilerarg value="-std=c99" />
+           <compilerarg value="-DNGS_DB_ORACLE" />
+           <fileset dir=".">
+             <include name="bb80ll.c" />
+             <include name="expform.c" />
+             <include name="ff1.c" />
+             <include name="ff1out.c" />
+             <include name="ff2.c" />
+             <include name="ff2out.c" />
+             <include name="ff4out.c" />
+             <include name="intg.c" />
+             <include name="intro.c" />
+             <include name="run_bbk.c" />
+             <include name="comlib2/intg_fn.c" />
+             <include name="comlib2/bilin.c" />
+             <include name="comlib2/c2v.c" />
+             <include name="comlib2/dd_dms.c" />
+             <include name="comlib2/dms_dd.c" />
+             <include name="comlib2/flip_endian_d.c" />
+             <include name="comlib2/flip_endian_f.c" />
+             <include name="comlib2/flip_endian_l.c" />
+             <include name="comlib2/getdir_geoid.c" />
+             <include name="comlib2/getgrd_geoid.c" />
+             <include name="comlib2/getgrd_vardis.c" />
+             <include name="comlib2/getheaders.c" />
+             <include name="comlib2/initsp.c" />
+             <include name="comlib2/interg.c" />
+             <include name="comlib2/interg_idw.c" />
+             <include name="comlib2/spline.c" />
+             <include name="comlib2/spline4.c" />
+             <include name="comlib2/spline6.c" />
+             <include name="comlib2/which1.c" />
+             <include name="comlib2/trim_c.c" />
+             <include name="comlib2/idw_interp.c" />
+             <include name="comlib2/compute_dist.c" />
+           </fileset>
+           <includepath >
+             <pathelement location="."/>
+             <pathelement location="./inclib2"/>
+             <pathelement location="./inclib3"/>
+           </includepath>
+        </cc>
+    </target>
+    <!-- compile Fotran-modules-->
+    <target name="f_compile" depends="init" if="isUnix">
+      <cc name="f77" objdir="${obj}" subsystem="console">
+           <compilerarg value="-g" if="debug" />
+           <compilerarg value="-DSolaris" />
+           <compilerarg value="-fpp" />
+           <includepath >
+             <pathelement location="."/>
+             <pathelement location="./inclib2"/>
+             <pathelement location="./inclib3"/>
+           </includepath>
+      </cc>
+    </target>
+    <!-- link objects and make executable-->
+    <target name="linkallunix" depends="c_compile" if="isUnix">
+       <antcall target="backupapp"/>
+       <cc name="f77" outtype="executable" subsystem="console" outfile="${executable}">
+         <fileset dir="${obj}" includes="*.o"/>
+         <libset dir="${USR_HOME}/lib" libs="nsl,m,dl" />
+       </cc>
+    </target>
+    <target name="linkallwindows" if="isWindows">
+         <exec executable="g++" >
+           <arg value="-DNGS_PC_ENV" />
+           <arg value="-static" />
+           <arg value="-m32" />
+           <arg value="-Wall" />
+           <arg value="*.c" />
+           <arg value="-o" />
+           <arg value="intg" />
+         </exec>
+   </target>
+
+   <!-- define our main/default target -->
+   <target name="linkall" depends="linkallunix,linkallwindows">
+    <echo message="Operating System: ${os.name}" />
+   </target>
+
+   <target name="deployweb" depends="deploy,isdev,istest,isprod">
+         <antcall target="copycgi"/>
+         <antcall target="copyexe"/>
+         <antcall target="changegroupweb"/>
+         <echo message="intg is deployed" />
+   </target>
+   <target name="deploybetaweb" depends="deploy,isbeta">
+         <antcall target="copycgi"/>
+	 <antcall target="copyexe"/>
+         <antcall target="changegroupweb"/>
+         <echo message="intg is deployed" />
+   </target>
+
+    <target name="deploy" depends="linkall" if="isUnix">
+      <!-- Move executable to deployment directory -->
+      <!-- dev server exe is in build directory -->
+      <!-- test/prod exe is moved to /ngs/projects/bluebook/bin -->
+         <chmod file="${executable}" perm="775" />
+         <antcall target="changegroup"/>
+         <exec executable="ln" >
+            <arg value="-s" />
+            <arg value="${WRAPPER}" />
+            <arg value="${destbindir}/${exe_name}" />
+         </exec>
+
+         <antcall target="scpdeimos"/>
+
+         <antcall target="zip"/>
+         <exec executable="/ngs/projects/database/scripts/banner" >
+            <arg value="${NGS_SERVERENV}" />            
+         </exec>
+         <echo message="Application deployed to ${destbindir}/${exe_name.w}" />
+    </target>
+    <!-- Change group to ngssdd in TEST and PROD only -->
+    <target name="changegroup" unless="DEV" if="isUnix">
+         <exec executable="chgrp"  >
+           <arg value="-f" />
+           <arg value="${RELTEAM_UNXGRP}" />
+           <arg value="${executable}" />
+         </exec>
+    </target>
+    <!-- backup the executable only in production environment -->
+    <target name="backupapp" if="PROD,isUnix">
+         <tstamp/>
+         <exec executable="mv" >
+            <arg value="${destbindir}/${exe_name.w}" />
+            <arg value="${destbindir}/backup/${exe_name.w}_${DSTAMP}${TSTAMP}" />
+         </exec>
+    </target>
+    <target name="clean" if="isUnix">
+         <exec executable="rm"  >
+           <arg value="-rf" />
+           <arg value="${obj}" />
+         </exec>
+    </target>
+    <target name="zip" if="isUnix">
+         <exec executable="zip"  >
+           <arg value="-Dl" />
+           <arg value="-j" />
+           <arg value="intg" />
+           <arg value="bb80ll.c" />
+           <arg value="expform.c" />
+           <arg value="ff1.c" />
+           <arg value="ff1out.c" />
+           <arg value="ff2.c" />
+           <arg value="ff2out.c" />
+           <arg value="ff4out.c" />
+           <arg value="intg.c" />
+           <arg value="intro.c" />
+           <arg value="run_bbk.c" />
+           <arg value="comlib2/intg_fn.c" />
+           <arg value="comlib2/bilin.c" />
+           <arg value="comlib2/c2v.c" />
+           <arg value="comlib2/dd_dms.c" />
+           <arg value="comlib2/dms_dd.c" />
+           <arg value="comlib2/flip_endian_d.c" />
+           <arg value="comlib2/flip_endian_f.c" />
+           <arg value="comlib2/flip_endian_l.c" />
+           <arg value="comlib2/getdir_geoid.c" />
+           <arg value="comlib2/getgrd_geoid.c" />
+           <arg value="comlib2/getheaders.c" />
+           <arg value="comlib2/initsp.c" />
+           <arg value="comlib2/interg.c" />
+           <arg value="comlib2/spline.c" />
+           <arg value="comlib2/spline4.c" />
+           <arg value="comlib2/spline6.c" />
+           <arg value="comlib2/which1.c" />
+           <arg value="comlib2/trim_c.c" />
+           <arg value="comlib2/idw_interp.c" />
+           <arg value="comlib2/getgrd_vardis.c" />
+           <arg value="comlib2/interg_idw.c" />
+           <arg value="comlib2/compute_dist.c" />
+           <arg value="bb80ll.h" />
+           <arg value="inclib2/bilin.h" />
+           <arg value="inclib2/c2v.h" />
+           <arg value="inclib3/dataset1.h" />
+           <arg value="inclib2/dd_dms.h" />
+           <arg value="inclib2/dms_dd.h" />
+           <arg value="expform.h" />
+           <arg value="ff1.h" />
+           <arg value="ff1out.h" />
+           <arg value="ff2.h" />
+           <arg value="ff2out.h" />
+           <arg value="ff4out.h" />
+           <arg value="inclib2/flip_endian_d.h" />
+           <arg value="inclib2/flip_endian_f.h" />
+           <arg value="inclib2/flip_endian_l.h" />
+           <arg value="inclib2/getdir_geoid.h" />
+           <arg value="inclib2/getgrd_geoid.h" />
+           <arg value="inclib2/getheaders.h" />
+           <arg value="inclib2/grid_header.h" />
+           <arg value="inclib2/initsp.h" />
+           <arg value="inclib2/interg.h" />
+           <arg value="intro.h" />
+           <arg value="run_bbk.h" />
+           <arg value="inclib2/spline.h" />
+           <arg value="inclib2/spline4.h" />
+           <arg value="inclib2/spline6.h" />
+           <arg value="inclib2/trim_c.h" />
+           <arg value="inclib2/west_to_east.h" />
+           <arg value="inclib2/which1.h" />
+           <arg value="inclib2/interg_idw.h" />
+           <arg value="inclib2/idw_point.h" />
+           <arg value="inclib2/idw_interp.h" />
+           <arg value="inclib2/getgrd_vardis.h" />
+           <arg value="inclib2/compute_dist.h" />
+           <arg value="inclib2/myconst.h" />
+           <arg value="makefile.w32" />
+           <arg value="build.xml" />
+         </exec>
+         <exec executable="zip"  >
+           <arg value="-D" />
+           <arg value="-j" />
+           <arg value="-g" />
+           <arg value="intg" />
+           <arg value="intg.exe" />
+         </exec>
+    </target>
+    <target name="copycgi">
+      <echo message="Copy Perl CGI ${CGI_SERVER_LOCAL}:${CGI_PATH}/"/>
+      <exec executable="/bin/sh"  >
+      	  <arg value="-c"/>
+          <arg value="scp -r ${pwd}/newweb/*.prl ${CGI_SERVER_LOCAL}:${CGI_PATH}" />
+      </exec>
+    </target>    
+    <target name="copyexe">
+      <echo message="Copy intg.exe to ${CGI_SERVER_LOCAL}: ${PC_PATH}/"/>
+      <exec executable="/bin/sh"  >
+      	  <arg value="-c"/>
+          <arg value="scp ${pwd}/intg.exe ${CGI_SERVER_LOCAL}:${PC_PATH}" />
+      </exec>
+      <exec executable="/bin/sh"  >
+      	  <arg value="-c"/>
+          <arg value="scp ${pwd}/intg.exe ${CGI_SERVER_LOCAL}:${PC_PATH}/intg_v${version}.exe" />
+      </exec>
+      <exec executable="/bin/sh"  >
+      	  <arg value="-c"/>
+          <arg value="scp ${pwd}/intg.zip ${CGI_SERVER_LOCAL}:${PC_PATH}/intg_v${version}.zip" />
+      </exec>
+    </target>
+    <target name="isdev" if="DEV" >
+      <property name="PC_PATH" value="/ngs/projects/web/testweb/htdocs/PC_PROD/GEOIDPGMS" />
+      <property name="CGI_PATH" value="${dev_dir}/GEOID_STUFF" />
+      <property name="CGI_SERVER_LOCAL" value="ngs-vsu-deimos"/>
+      <echo message="dev website location is ${CGI_SERVER_LOCAL}:${PC_PATH}/"/>
+    </target>
+    <target name="istest" if="TEST" >
+      <property name="PC_PATH" value="/ngs/projects/web/testweb/testdocs/PC_PROD/GEOIDPGMS" />
+      <property name="CGI_PATH" value="${test_dir}/GEOID_STUFF" />
+      <property name="CGI_SERVER_LOCAL" value="ngs-vsu-deimos"/>
+      <echo message="test website location is ${CGI_SERVER_LOCAL}:${PC_PATH}/"/>
+    </target>
+    <target name="isbeta"  >
+      <property name="PC_PATH" value="/ngs/projects/web/testweb/betadocs/PC_PROD/GEOIDPGMS" />
+      <property name="CGI_PATH" value="${beta_dir}/GEOID_STUFF" />
+      <property name="CGI_SERVER_LOCAL" value="deimos"/>
+      <echo message="beta website location is ${CGI_SERVER_LOCAL}:${PC_PATH}/"/>
+      <echo message=" copying ${exe_name.w} to enceladus:${destbindir} " />
+      <exec executable="/bin/ksh"  >
+          <arg value="-c" />
+          <arg value="scp ${executable} enceladus:${destbindir}" />
+      </exec>
+    </target>
+    <target name="isprod" if="PROD" >
+      <property name="PC_PATH" value="/ngs/projects/web/newweb/htdocs/PC_PROD/GEOIDPGMS" />
+      <property name="CGI_PATH" value="${prod_dir}/GEOID_STUFF" />
+      <property name="CGI_SERVER_LOCAL" value="deimos"/>
+      <echo message="prod website location is ${CGI_SERVER_LOCAL}:${PC_PATH}/"/>
+    </target>
+    <target name="changegroupweb">
+      <exec executable="/bin/sh"  >
+         <arg value="-c" />
+         <arg value="ssh ${CGI_SERVER_LOCAL} chgrp -R -f ${RELTEAM_UNXGRP} ${PC_PATH}/*" />
+      </exec>     
+      <echo message="ssh ${CGI_SERVER_LOCAL} chmod -R 775 ${PC_PATH}" />
+      <exec executable="/bin/sh"  >
+          <arg value="-c" />
+          <arg value="ssh ${CGI_SERVER_LOCAL} chmod -R 775 ${PC_PATH}/*" />
+      </exec>        
+      <exec executable="/bin/sh"  >
+         <arg value="-c" />
+         <arg value="ssh ${CGI_SERVER_LOCAL} chgrp -R -f ${RELTEAM_UNXGRP} ${CGI_PATH}/*" />
+      </exec>     
+      <echo message="ssh ${CGI_SERVER_LOCAL} chmod -R 775 ${CGI_PATH}" />
+      <exec executable="/bin/sh"  >
+          <arg value="-c" />
+          <arg value="ssh ${CGI_SERVER_LOCAL} chmod -R 775 ${CGI_PATH}/*" />
+      </exec> 
+    </target>
+    <target name="scpdeimos" if="PROD" >
+      <tstamp/>
+      <echo message=" backup program on ${CGI_SERVER}:${destbindir} " />
+      <exec executable="/bin/ksh"  >
+          <arg value="-c" />
+          <arg value="scp ${CGI_SERVER}:${executable} ${CGI_SERVER}:${destbindir}/backup/${exe_name.w}_${DSTAMP}${TSTAMP}" />
+      </exec>
+      <echo message=" copying ${exe_name.w} to ${CGI_SERVER}:${destbindir} " />
+      <exec executable="/bin/ksh"  >
+          <arg value="-c" />
+          <arg value="ssh ${CGI_SERVER} ln -s ${WRAPPER} ${destbindir}/${exe_name}" />
+      </exec>
+      <exec executable="/bin/ksh"  >
+          <arg value="-c" />
+          <arg value="scp ${executable} ${CGI_SERVER}:${destbindir}" />
+      </exec>
+      <echo message="ssh ${CGI_SERVER} chmod 775 ${destbindir}" />
+      <exec executable="/bin/ksh"  >
+          <arg value="-c" />
+          <arg value="ssh ${CGI_SERVER} chmod 775 ${executable}" />
+      </exec>
+
+      <echo message=" chgrp on ${CGI_SERVER}:${destbindir}" />
+      <exec executable="/bin/ksh"  >
+          <arg value="-c" />
+          <arg value="ssh ${CGI_SERVER} chgrp -f ${RELTEAM_UNXGRP} ${executable}" />
+      </exec>
+      <echo message=" binary deployed to ${CGI_SERVER}:${destbindir}" />
+    </target>
+</project>
+
