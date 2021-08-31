@@ -7,7 +7,7 @@
     <property name="build" location="build"/>
     <property name="obj" location="${build}/obj"/>
     <property name="executable" location="${destbindir}/${exe_name.w}"/>
-    <property name="pwd" location=""/>
+    <property name="cwd" location=""/>
     <property name="version" value="${version_in}"/>
     <taskdef resource="cpptasks.tasks"/>
     <property name="dev_dir" value="/ngs/projects/web/testweb/devlinuxlocal/cgi/cgi-bin"/>
@@ -129,7 +129,7 @@
 
     <target name="deploy" depends="linkall" if="isUnix">
       <!-- Move executable to deployment directory -->
-      <!-- dev server exe is in build directory -->
+      <!-- dev exe is in build directory -->
       <!-- test/prod exe is moved to /ngs/projects/bluebook/bin -->
          <chmod file="${executable}" perm="775" />
          <antcall target="changegroup"/>
@@ -256,22 +256,22 @@
       <echo message="Copy Perl CGI ${CGI_SERVER_LOCAL}:${CGI_PATH}/"/>
       <exec executable="/bin/sh"  >
       	  <arg value="-c"/>
-          <arg value="scp -r ${pwd}/newweb/*.prl ${CGI_SERVER_LOCAL}:${CGI_PATH}" />
+          <arg value="scp -r ${cwd}/newweb/*.prl ${CGI_SERVER_LOCAL}:${CGI_PATH}" />
       </exec>
     </target>    
     <target name="copyexe">
       <echo message="Copy intg.exe to ${CGI_SERVER_LOCAL}: ${PC_PATH}/"/>
       <exec executable="/bin/sh"  >
       	  <arg value="-c"/>
-          <arg value="scp ${pwd}/intg.exe ${CGI_SERVER_LOCAL}:${PC_PATH}" />
+          <arg value="scp ${cwd}/intg.exe ${CGI_SERVER_LOCAL}:${PC_PATH}" />
       </exec>
       <exec executable="/bin/sh"  >
       	  <arg value="-c"/>
-          <arg value="scp ${pwd}/intg.exe ${CGI_SERVER_LOCAL}:${PC_PATH}/intg_v${version}.exe" />
+          <arg value="scp ${cwd}/intg.exe ${CGI_SERVER_LOCAL}:${PC_PATH}/intg_v${version}.exe" />
       </exec>
       <exec executable="/bin/sh"  >
       	  <arg value="-c"/>
-          <arg value="scp ${pwd}/intg.zip ${CGI_SERVER_LOCAL}:${PC_PATH}/intg_v${version}.zip" />
+          <arg value="scp ${cwd}/intg.zip ${CGI_SERVER_LOCAL}:${PC_PATH}/intg_v${version}.zip" />
       </exec>
     </target>
     <target name="isdev" if="DEV" >

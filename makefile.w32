@@ -5,7 +5,7 @@
 #  to publish:                                   make copy
 #  to remove all except the executable (clean):  make clean
 #---------------------------------------------------------------------
-# using MinGW-5.1.3 port of GNU gcc (g++) compiler
+# using MinGW-5.1.3 of GNU gcc (g++) compiler
 # home     - http://www.mingw.org/
 # download - http://sourceforge.net/project/showfiles.php?group_id=2435
 #
