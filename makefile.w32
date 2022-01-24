@@ -5,7 +5,7 @@
 #  to publish:                                   make copy
 #  to remove all except the executable (clean):  make clean
 #---------------------------------------------------------------------
-# using MinGW-5.1.3 of GNU gcc (g++) compiler
+# using MinGW-5.1.3 port of GNU gcc (g++) compiler
 # home     - http://www.mingw.org/
 # download - http://sourceforge.net/project/showfiles.php?group_id=2435
 #
@@ -16,8 +16,8 @@
 #  -ox    object filename = "x"
 #  -Wall  turn on all warning messages
 #---------------------------------------------------------------------
-CCROOT  =  C:\\MinGW
-CCC     =  $(CCROOT)\\bin\\g++.exe
+CCROOT  =  C:\msys2\mingw64
+CCC     =  $(CCROOT)\\bin\\gcc.exe
 
 # Production
 CFLAGS   =  
@@ -31,7 +31,7 @@ CCFLAGS  =  -DNGS_PC_ENV
 .C.o   :
 	$(CCC) $(CCFLAGS) $(INCLUDES) -c $<
 #-------------------------------------
-PGM      = intg
+PGM      = xintg
 
 INCLUDES = \
   -I.
@@ -57,6 +57,9 @@ OBJECTS  = \
   flip_endian_l.o  \
   getdir_geoid.o \
   getgrd_geoid.o   \
+  getdir_dgeoid.o \
+  getgrd_dgeoid.o   \
+  check_pacific_plate.o \
   getheaders.o     \
   initsp.o         \
   interg.o         \
@@ -90,17 +93,19 @@ dms_dd.o           : dms_dd.c          dms_dd.h
 flip_endian_d.o    : flip_endian_d.c   flip_endian_d.h
 flip_endian_f.o    : flip_endian_f.c   flip_endian_f.h
 flip_endian_l.o    : flip_endian_l.c   flip_endian_l.h
-getdir_geoid.o   : getdir_geoid.c  getdir_geoid.h
-getgrd_geoid.o     : getgrd_geoid.c    getgrd_geoid.h
+getdir_geoid.o     : getdir_geoid.c    getdir_geoid.h
+getgrd_geoid.o     : getgrd_geoid.c    
+getdir_dgeoid.o    : getdir_dgeoid.c   getdir_dgeoid.h
+getgrd_dgeoid.o    : getgrd_dgeoid.c   getgrd_dgeoid.h
 getheaders.o       : getheaders.c      getheaders.h   grid_header.h
 initsp.o           : initsp.c          initsp.h
 interg.o           : interg.c          interg.h       grid_header.h
 spline.o           : spline.c          spline.h
 spline4.o          : spline4.c         spline4.h      grid_header.h
-spline6.o          : spline6.c         spline6.h      grid_header.h
+spline6.o          : spline6.c         grid_header.h
 trim_c.o           : trim_c.c          trim_c.h
 which1.o           : which1.c          which1.h       grid_header.h
-
+check_pacific_plate.o : check_pacific_plate.c
 
 clean:
 	erase core
